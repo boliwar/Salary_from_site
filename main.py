@@ -72,11 +72,12 @@ def fill_statistic_hh(languages):
     response = requests.get(url, params=payload)
     response.raise_for_status()
 
-    found = response.json()["found"]
+    response_json = response.json()
+    found = response_json["found"]
     page_count = found // 20 + round(found % 20)
     if page_count > 100: page_count = 99
     page = 1
-    vacancies = response.json()['items']
+    vacancies = response_json['items']
 
     while page <= page_count:
         payload = {'area': moscow_id,
@@ -88,7 +89,8 @@ def fill_statistic_hh(languages):
         response = requests.get(url, params=payload)
         response.raise_for_status()
 
-        page_payload = response.json()['items']
+        response_json = response.json()
+        page_payload = response_json['items']
         vacancies = vacancies + page_payload
         page += 1
 
@@ -132,11 +134,12 @@ def fill_statistic_sj(x_api_app_id, languages):
     response = requests.get(url, headers=headers, params=payload)
     response.raise_for_status()
 
-    found = response.json()["total"]
+    response_json = response.json()
+    found = response_json["total"]
     page_count = found // 20 + round(found % 20)
     if page_count > 25: page_count = 24
     page = 1
-    vacancies = response.json()['objects']
+    vacancies = response_json['objects']
 
     while page <= page_count:
         payload = {"town": moscow_id,
@@ -148,8 +151,9 @@ def fill_statistic_sj(x_api_app_id, languages):
                    }
         response = requests.get(url, params=payload, headers=headers)
         response.raise_for_status()
-
-        page_payload = response.json()['objects']
+        
+        response_json = response.json()
+        page_payload = response_json['objects']
         vacancies = vacancies + page_payload
         page += 1
 
