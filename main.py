@@ -58,9 +58,13 @@ def fill_statistic_hh(languages):
                                         }
                                  })
 
-    payload = {'area': "1",
-               'specialization': "1.221",
-               'period': "30",
+    moscow_id = "1"
+    industry_id = "1.221"
+    amount_days = "30"
+
+    payload = {'area': moscow_id,
+               'specialization': industry_id,
+               'period': amount_days,
                "text" : f"'{' or '.join(languages)}'",
                }
     url = f"https://api.hh.ru/vacancies"
@@ -75,10 +79,10 @@ def fill_statistic_hh(languages):
     vacancies = response.json()['items']
 
     while page <= page_count:
-        payload = {'area': "1",
+        payload = {'area': moscow_id,
                    'page': page,
-                   'specialization': "1.221",
-                   'period': "30",
+                   'specialization': industry_id,
+                   'period': amount_days,
                    "text": f"'{' or '.join(languages)}'",
                    }
         response = requests.get(url, params=payload)
@@ -113,9 +117,14 @@ def fill_statistic_sj(x_api_app_id, languages):
 
     url = f'https://api.superjob.ru/2.0/vacancies/'
     headers = {'X-Api-App-Id': x_api_app_id}
-    payload = {"town": 4,
-               "catalogues": 48,
-               "keywords.srws": 1,
+
+    moscow_id= 4
+    industry_id = 48
+    place_search = 1
+
+    payload = {"town": moscow_id,
+               "catalogues": industry_id,
+               "keywords.srws": place_search,
                "keywords.skwc": 'or',
                "keywords.key": languages,
                }
@@ -130,10 +139,10 @@ def fill_statistic_sj(x_api_app_id, languages):
     vacancies = response.json()['objects']
 
     while page <= page_count:
-        payload = {"town": 4,
-                   "catalogues": 48,
+        payload = {"town": moscow_id,
+                   "catalogues": industry_id,
                    'page': page,
-                   "keywords.srws": 1,
+                   "keywords.srws": place_search,
                    "keywords.skwc": 'or',
                    "keywords.key": languages,
                    }
