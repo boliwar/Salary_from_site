@@ -6,8 +6,8 @@ from terminaltables import AsciiTable
 
 def get_ansi_table(top_languages, title):
     top_languages_table = [['Язык программирования', 'Вакансий найдено', 'Вакансий обработано', 'Средняя зарплата']]
-    for key, statistic_values in top_languages.items():
-        top_languages_table.append([key,
+    for programming_language, statistic_values in top_languages.items():
+        top_languages_table.append([programming_language,
                                     statistic_values["vacancies_found"],
                                     statistic_values["vacancies_processed"],
                                     statistic_values["average_salary"]]
@@ -95,14 +95,14 @@ def fill_statistic_hh(languages):
         page += 1
 
     for vacancie in vacancies:
-        for key, statistic_values in top_languages_hh.items():
-            if str(key).lower() in vacancie["name"].lower():
+        for programming_language, statistic_values in top_languages_hh.items():
+            if str(programming_language).lower() in vacancie["name"].lower():
                 statistic_values["vacancies_found"] = statistic_values["vacancies_found"] + 1
                 one_salary = predict_rub_salary_hh(vacancie)
                 if one_salary:
                     statistic_values["vacancies_processed"] = statistic_values["vacancies_processed"] + 1
                     statistic_values["average_salary"] = round((statistic_values["average_salary"] + one_salary) / 2, 2)
-                top_languages_hh[key] = statistic_values
+                top_languages_hh[programming_language] = statistic_values
                 break
     return top_languages_hh
 
@@ -151,21 +151,21 @@ def fill_statistic_sj(x_api_app_id, languages):
                    }
         response = requests.get(url, params=payload, headers=headers)
         response.raise_for_status()
-        
+
         response_json = response.json()
         page_payload = response_json['objects']
         vacancies = vacancies + page_payload
         page += 1
 
     for vacancie in vacancies:
-        for key, statistic_values in top_languages_sj.items():
-            if str(key).lower() in vacancie["profession"].lower():
+        for programming_language, statistic_values in top_languages_sj.items():
+            if str(programming_language).lower() in vacancie["profession"].lower():
                 statistic_values["vacancies_found"] = statistic_values["vacancies_found"] + 1
                 one_salary = predict_rub_salary_sj(vacancie)
                 if one_salary:
                     statistic_values["vacancies_processed"] = statistic_values["vacancies_processed"] + 1
                     statistic_values["average_salary"] = round((statistic_values["average_salary"] + one_salary) / 2, 2)
-                top_languages_sj[key] = statistic_values
+                top_languages_sj[programming_language] = statistic_values
                 break
     return top_languages_sj
 
