@@ -96,14 +96,18 @@ def fill_statistic_hh(languages):
 
     for vacancie in vacancies:
         for programming_language, statistic_values in top_languages_hh.items():
-            if str(programming_language).lower() in vacancie["name"].lower():
-                statistic_values["vacancies_found"] = statistic_values["vacancies_found"] + 1
-                one_salary = predict_rub_salary_hh(vacancie)
-                if one_salary:
-                    statistic_values["vacancies_processed"] = statistic_values["vacancies_processed"] + 1
-                    statistic_values["average_salary"] = round((statistic_values["average_salary"] + one_salary) / 2, 2)
-                top_languages_hh[programming_language] = statistic_values
-                break
+
+            if str(programming_language).lower() not in vacancie["name"].lower():
+                continue
+
+            statistic_values["vacancies_found"] = statistic_values["vacancies_found"] + 1
+            one_salary = predict_rub_salary_hh(vacancie)
+            if one_salary:
+                statistic_values["vacancies_processed"] = statistic_values["vacancies_processed"] + 1
+                statistic_values["average_salary"] = round((statistic_values["average_salary"] + one_salary) / 2, 2)
+            top_languages_hh[programming_language] = statistic_values
+            break
+
     return top_languages_hh
 
 
@@ -159,14 +163,17 @@ def fill_statistic_sj(x_api_app_id, languages):
 
     for vacancie in vacancies:
         for programming_language, statistic_values in top_languages_sj.items():
-            if str(programming_language).lower() in vacancie["profession"].lower():
-                statistic_values["vacancies_found"] = statistic_values["vacancies_found"] + 1
-                one_salary = predict_rub_salary_sj(vacancie)
-                if one_salary:
-                    statistic_values["vacancies_processed"] = statistic_values["vacancies_processed"] + 1
-                    statistic_values["average_salary"] = round((statistic_values["average_salary"] + one_salary) / 2, 2)
-                top_languages_sj[programming_language] = statistic_values
-                break
+            if str(programming_language).lower() not in vacancie["profession"].lower():
+                continue
+
+            statistic_values["vacancies_found"] = statistic_values["vacancies_found"] + 1
+            one_salary = predict_rub_salary_sj(vacancie)
+            if one_salary:
+                statistic_values["vacancies_processed"] = statistic_values["vacancies_processed"] + 1
+                statistic_values["average_salary"] = round((statistic_values["average_salary"] + one_salary) / 2, 2)
+            top_languages_sj[programming_language] = statistic_values
+            break
+
     return top_languages_sj
 
 
