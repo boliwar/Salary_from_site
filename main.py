@@ -3,26 +3,24 @@ from dotenv import load_dotenv
 import os
 from terminaltables import AsciiTable
 
-def get_ansi_table(top_languages, title):
-    TABLE_DATA =[]
-    TABLE_DATA.append(['Язык программирования','Вакансий найдено', 'Вакансий обработано', 'Средняя зарплата'])
-    for key, calc in top_languages.items():
-        TABLE_DATA.append([key, calc["vacancies_found"], calc["vacancies_processed"], calc["average_salary"]])
 
-    table_instance = AsciiTable(TABLE_DATA, title)
+def get_ansi_table(top_languages, title):
+    top_languages_table = [['Язык программирования', 'Вакансий найдено', 'Вакансий обработано', 'Средняя зарплата']]
+    for key, statistic_values in top_languages.items():
+        top_languages_table.append([key,
+                                    statistic_values["vacancies_found"],
+                                    statistic_values["vacancies_processed"],
+                                    statistic_values["average_salary"]]
+                                  )
+
+    table_instance = AsciiTable(top_languages_table, title)
     table_instance.justify_columns[1] = 'right'
     table_instance.justify_columns[2] = 'right'
     table_instance.justify_columns[3] = 'right'
     return table_instance.table
 
 
-
-def predict_rub_salary_hh(vacancie):
-    if vacancie["salary"] is None:
-        return None
-    salary_from = vacancie["salary"]["from"]
-    salary_to = vacancie["salary"]["to"]
-    salary_currency = vacancie["salary"]["currency"]
+def get_average_salary(salary_from, salary_to, salary_currency):
     if salary_currency != 'RUR' or (not salary_from and not salary_to):
         return None
     if salary_from and not salary_to:
@@ -32,34 +30,38 @@ def predict_rub_salary_hh(vacancie):
 
     return (salary_from+salary_to)/2
 
+
+def predict_rub_salary_hh(vacancie):
+    if str(vacancie["salary"]): return None
+    salary_from = vacancie["salary"]["from"]
+    salary_to = vacancie["salary"]["to"]
+    salary_currency = vacancie["salary"]["currency"]
+
+    return get_average_salary(salary_from, salary_to, salary_currency)
+
+
 def predict_rub_salary_sj(vacancie):
     salary_from = vacancie["payment_from"]
     salary_to = vacancie["payment_to"]
     salary_currency = vacancie["currency"]
-    if salary_currency != 'rub' or ( salary_from==0 and salary_to==0):
-        return None
-    if salary_from and salary_to==0:
-        return salary_from * 1.2
-    if salary_from==0 and salary_to:
-        return salary_to * 0.8
 
-    return (salary_from+salary_to)/2
+    return get_average_salary(salary_from, salary_to, salary_currency)
 
-def fill_statistic_hh():
+
+def fill_statistic_hh(languages):
+
     top_languages_hh = {}
-    for lang in ['JavaScript', 'Java', 'Python', 'Ruby', 'PHP', 'C++', 'C#', 'Scala']:
+    for lang in languages:
         top_languages_hh.update({lang: {"vacancies_found": 0,
                                         "vacancies_processed": 0,
                                         "average_salary": 0,
                                         }
                                  })
 
-
-    # "id": "1.221", "name": "Программирование, Разработка"  specialization
-    # "id": "1"  Москва  area
     payload = {'area': "1",
                'specialization': "1.221",
                'period': "30",
+               "text" : f"'{' or '.join(languages)}'",
                }
     url = f"https://api.hh.ru/vacancies"
 
@@ -69,7 +71,6 @@ def fill_statistic_hh():
     found = response.json()["found"]
     page_count = found // 20 + round(found % 20)
     if page_count > 100: page_count = 99
-    # print(page_count)
     page = 1
     vacancies = response.json()['items']
 
@@ -78,6 +79,7 @@ def fill_statistic_hh():
                    'page': page,
                    'specialization': "1.221",
                    'period': "30",
+                   "text": f"'{' or '.join(languages)}'",
                    }
         response = requests.get(url, params=payload)
         response.raise_for_status()
@@ -85,38 +87,37 @@ def fill_statistic_hh():
         page_payload = response.json()['items']
         vacancies = vacancies + page_payload
         page += 1
-        # print(page)
 
     for vacancie in vacancies:
-        for key, calc in top_languages_hh.items():
+        for key, statistic_values in top_languages_hh.items():
             if str(key).lower() in vacancie["name"].lower():
-                calc["vacancies_found"] = calc["vacancies_found"] + 1
-                avg_salary = calc["average_salary"] + 1
+                statistic_values["vacancies_found"] = statistic_values["vacancies_found"] + 1
                 one_salary = predict_rub_salary_hh(vacancie)
                 if one_salary:
-                    calc["vacancies_processed"] = calc["vacancies_processed"] + 1
-                    calc["average_salary"] = round((calc["average_salary"] + one_salary) / 2, 2)
-                addon = {key: calc}
-                top_languages_hh.update(addon)
+                    statistic_values["vacancies_processed"] = statistic_values["vacancies_processed"] + 1
+                    statistic_values["average_salary"] = round((statistic_values["average_salary"] + one_salary) / 2, 2)
+                top_languages_hh[key] = statistic_values
                 break
     return top_languages_hh
 
-def fill_statistic_sj():
+
+def fill_statistic_sj(x_api_app_id, languages):
+
     top_languages_sj = {}
-    for lang in ['JavaScript', 'Java', 'Python', 'Ruby', 'PHP', 'C++', 'C#', 'Scala']:
+    for lang in languages:
         top_languages_sj.update({lang: {"vacancies_found": 0,
                                         "vacancies_processed": 0,
                                         "average_salary": 0,
                                         }
                                  })
-    load_dotenv()
-    XApiAppId = os.environ['X-Api-App-Id']
+
     url = f'https://api.superjob.ru/2.0/vacancies/'
-    # "id":4,"id_region":46,"id_country":1,"title":"Москва","title_eng":"Moscow"
-    # {"title_rus":"Разработка, программирование","url_rus":"razrabotka-po","title":"Разработка, программирование","id_parent":33,"key":48}
-    headers = {'X-Api-App-Id': XApiAppId}
+    headers = {'X-Api-App-Id': x_api_app_id}
     payload = {"town": 4,
                "catalogues": 48,
+               "keywords.srws": 1,
+               "keywords.skwc": 'or',
+               "keywords.key": languages,
                }
 
     response = requests.get(url, headers=headers, params=payload)
@@ -125,13 +126,16 @@ def fill_statistic_sj():
     found = response.json()["total"]
     page_count = found // 20 + round(found % 20)
     if page_count > 25: page_count = 24
-    # print(page_count)
     page = 1
     vacancies = response.json()['objects']
+
     while page <= page_count:
         payload = {"town": 4,
                    "catalogues": 48,
                    'page': page,
+                   "keywords.srws": 1,
+                   "keywords.skwc": 'or',
+                   "keywords.key": languages,
                    }
         response = requests.get(url, params=payload, headers=headers)
         response.raise_for_status()
@@ -139,28 +143,26 @@ def fill_statistic_sj():
         page_payload = response.json()['objects']
         vacancies = vacancies + page_payload
         page += 1
-        # print(page)
 
     for vacancie in vacancies:
-        for key, calc in top_languages_sj.items():
+        for key, statistic_values in top_languages_sj.items():
             if str(key).lower() in vacancie["profession"].lower():
-                calc["vacancies_found"] = calc["vacancies_found"] + 1
-                avg_salary = calc["average_salary"] + 1
+                statistic_values["vacancies_found"] = statistic_values["vacancies_found"] + 1
                 one_salary = predict_rub_salary_sj(vacancie)
                 if one_salary:
-                    calc["vacancies_processed"] = calc["vacancies_processed"] + 1
-                    calc["average_salary"] = round((calc["average_salary"] + one_salary) / 2, 2)
-                addon = {key: calc}
-                top_languages_sj.update(addon)
+                    statistic_values["vacancies_processed"] = statistic_values["vacancies_processed"] + 1
+                    statistic_values["average_salary"] = round((statistic_values["average_salary"] + one_salary) / 2, 2)
+                top_languages_sj[key] = statistic_values
                 break
     return top_languages_sj
 
 
 def main():
-    top_languages_hh={}
-    top_languages_hh.update(fill_statistic_hh())
-    top_languages_sj = {}
-    top_languages_sj.update(fill_statistic_sj())
+    load_dotenv()
+    x_api_app_id = os.environ['SJ_X-API-APP-ID']
+    languages = ['JavaScript', 'Java', 'Python', 'Ruby', 'PHP', 'C++', 'C#', 'Scala']
+    top_languages_hh = fill_statistic_hh(languages)
+    top_languages_sj = fill_statistic_sj(x_api_app_id, languages)
 
     print(get_ansi_table(top_languages_hh, 'HH Moscow'))
     print()
